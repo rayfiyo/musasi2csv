@@ -37,7 +37,8 @@ tmp/
 
 # 環境変数や機密情報など
 .env
-.secrets
+!.env.example
+*.secret
 *.key
 *.pem
 *.crt
