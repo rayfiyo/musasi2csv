@@ -40,7 +40,7 @@ func Load() (*Config, error) {
 
 	flag.StringVar(&envPath, "env", ".env", "認証情報 .env のパス (Default: ./.env)")
 	flag.BoolVar(&headless, "headless", true, "ヘッドレスモード有効(true)/無効(false)")
-	flag.IntVar(&timeoutSec, "timeout", 3000, "全体のタイムアウト時間 [秒]")
+	flag.IntVar(&timeoutSec, "timeout", 12, "各判定のタイムアウト時間 [秒]")
 	flag.StringVar(&userDataDir, "user-data-dir", "",
 		"Chrome のユーザーデータディレクトリ（任意）")
 	flag.BoolVar(&verbose, "verbose", false, "詳細ログ出力の無効(false)/有効(true)")

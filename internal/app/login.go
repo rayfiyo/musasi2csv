@@ -12,7 +12,7 @@ import (
 )
 
 // docs/仕様.md の 1. ログイン を行う。
-func Login(ctx context.Context, loginURL, id, pw string) error {
+func Login(ctx context.Context, loginURL, id, pw string, timeout time.Duration) error {
 	// 入力・クリック
 	if err := chromedp.Run(ctx,
 		chromedp.Navigate(loginURL),
@@ -34,7 +34,7 @@ func Login(ctx context.Context, loginURL, id, pw string) error {
 	// 成否判定:
 	// 成功 -> https://www.musasi.jp/menu
 	// 失敗 -> /login のまま + #registrationErrors が追加
-	deadline := time.Now().Add(20 * time.Second)
+	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
 		var url string
 		if err := chromedp.Run(ctx, chromedp.Location(&url)); err != nil {
