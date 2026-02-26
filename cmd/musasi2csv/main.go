@@ -11,7 +11,7 @@ import (
 
 	"github.com/rayfiyo/musasi2csv/internal/browser"
 	"github.com/rayfiyo/musasi2csv/internal/config"
-	"github.com/rayfiyo/musasi2csv/internal/login"
+	"github.com/rayfiyo/musasi2csv/internal/app"
 )
 
 func main() {
@@ -38,7 +38,7 @@ func main() {
 	}
 	defer cancel()
 
-	if err := login.Login(ctx, cfg.LoginURL, cfg.ID, cfg.Password); err != nil {
+	if err := app.Login(ctx, cfg.LoginURL, cfg.ID, cfg.Password); err != nil {
 		log.Fatalf("ログイン失敗: %v", err)
 	}
 

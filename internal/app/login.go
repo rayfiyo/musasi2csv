@@ -1,6 +1,6 @@
-// internal/login/login.go
+// internal/app/login.go
 
-package login
+package app
 
 import (
 	"context"
