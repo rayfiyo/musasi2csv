@@ -1,3 +1,5 @@
+// cmd/musasi2csv/main.go
+
 package main
 
 import (
@@ -8,21 +10,25 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	cdplog "github.com/chromedp/cdproto/log"
 	"github.com/chromedp/chromedp"
+	"github.com/rayfiyo/musasi2csv/internal/login"
+	"github.com/rayfiyo/musasi2csv/utils"
 )
 
 func main() {
-	// アクセス対象の URL
-	const targetURL = "https://www.musasi.jp/oomachi-nabeshima"
+	// ログイン URL
+	const loginURL = "https://www.musasi.jp/oomachi-nabeshima/login"
 
 	// デフォルトの User Data Dir を決定（$HOME/.cache/chrome-user-data）
-	defaultUserDataDir := defaultChromeUserDataDir()
+	defaultUserDataDir := utils.DefaultChromeUserDataDir()
 
 	// コマンドラインオプション用
 	var (
+		envPath     string
 		headless    bool
 		timeoutSec  int
 		userDataDir string
@@ -30,17 +36,27 @@ func main() {
 	)
 
 	// コマンドラインオプション定義
-	// -headless      : ヘッドレスモード有効/無効（デフォルト: true）
-	// -timeout       : 全体のタイムアウト時間
-	// -user-data-dir : Chrome のユーザーデータディレクトリ（任意）
-	// -verbose       : 詳細ログ出力（chromedp内部ログ + ブラウザイベント）
-	flag.BoolVar(&headless, "headless", true, "ヘッドレスモードで実行するか")
-	flag.IntVar(&timeoutSec, "timeout", 3000, "最大スクレイピング時間（秒）")
+	flag.StringVar(&envPath, "env", ".env",
+		"認証情報を読む .env のパス（デフォルト: ./.env）",
+	)
+	flag.BoolVar(&headless, "headless", true, "ヘッドレスモード有効(true)/無効(false)")
+	flag.IntVar(&timeoutSec, "timeout", 3000, "全体のタイムアウト時間 [秒]")
 	flag.StringVar(&userDataDir, "user-data-dir", "",
 		"Chrome のユーザーデータディレクトリ（任意）",
 	)
-	flag.BoolVar(&verbose, "verbose", false, "情報ログを出力する（デフォルトは無効）")
+	flag.BoolVar(&verbose, "verbose", false, "詳細ログ出力の無効(false)/有効(true)")
 	flag.Parse()
+
+	// .env を読み込む（既存の環境変数が優先）
+	if err := utils.LoadDotEnv(envPath); err != nil {
+		log.Fatalf(".env 読み込み失敗: %v", err)
+	}
+
+	id := strings.TrimSpace(os.Getenv("ID"))
+	pw := strings.TrimSpace(os.Getenv("PASSWORD"))
+	if id == "" || pw == "" {
+		log.Fatalf("環境変数 または .env の ID/PASSWORD が未設定です")
+	}
 
 	// ユーザー指定があればそれを使用し、未指定ならデフォルトを使用
 	if userDataDir == "" {
@@ -66,7 +82,7 @@ func main() {
 	allocOpts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.UserDataDir(absUserDataDir),
 		chromedp.Flag("headless", headless),
-		// chromedp.Flag("disable-gpu", *headlessFlag), // headless時に有効化するのが一般的
+		chromedp.Flag("disable-gpu", headless), // headless時に有効化するのが一般的
 	)
 
 	// Chrome プロセス割り当て用コンテキスト
@@ -81,7 +97,6 @@ func main() {
 	ctx, cancelTimeout := context.WithTimeout(ctx,
 		time.Duration(timeoutSec)*time.Second,
 	)
-
 	defer cancelTimeout()
 
 	// verbose 時はブラウザイベントを監視
@@ -96,27 +111,13 @@ func main() {
 
 	log.Printf("user-data-dir: %s", absUserDataDir)
 	log.Printf("headless: %v", headless)
-	log.Printf("navigate: %s", targetURL)
+	log.Printf("login: %s", loginURL)
 
-	var finalURL string
-	var title string
-
-	// 実行タスク:
-	// 1. 指定URLへ遷移
-	// 2. body要素がReadyになるまで待機
-	// 3. 最終URL取得（リダイレクト考慮）
-	// 4. ページタイトル取得
-	err = chromedp.Run(ctx,
-		chromedp.Navigate(targetURL),
-		chromedp.WaitReady("body", chromedp.ByQuery),
-		chromedp.Location(&finalURL),
-		chromedp.Title(&title),
-	)
-	if err != nil {
-		log.Fatalf("chromedp 実行失敗: %v", err)
+	if err := login.Login(ctx, loginURL, id, pw); err != nil {
+		log.Fatalf("ログイン失敗: %v", err)
 	}
 
-	fmt.Printf("OK\nタイトル: %s\n最終URL: %s\n", title, finalURL)
+	fmt.Printf("OK\nログイン成功\n")
 
 	// 非ヘッドレス時は即終了せず Enter を待つ
 	if !headless {
@@ -124,14 +125,4 @@ func main() {
 		reader := bufio.NewReader(os.Stdin)
 		_, _ = reader.ReadBytes('\n')
 	}
-}
-
-// デフォルトの Chrome ユーザーデータディレクトリを決定する。
-// $HOME が取得できない場合は相対パスをフォールバックとして使用。
-func defaultChromeUserDataDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil || home == "" {
-		return filepath.FromSlash(".cache/chrome-user-data")
-	}
-	return filepath.Join(home, ".cache", "chrome-user-data")
 }
