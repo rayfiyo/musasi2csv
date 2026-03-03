@@ -43,13 +43,18 @@ func main() {
 	); err != nil {
 		log.Fatalf("ログイン失敗: %v", err)
 	}
-	fmt.Printf("OK\nログイン成功\n")
 
 	// ## 2. メニュー選択と初期化
 	if err := app.MenuSelectAndInit(ctx); err != nil {
 		log.Fatalf("メニュー選択と初期化に失敗: %v", err)
 	}
-	fmt.Printf("OK\nログイン成功 & 初期化成功\n")
+
+	// ## 3. 問題選択と解答準備
+	if err := app.PrepareQuestions(ctx, cfg.Workbook, cfg.Timeout); err != nil {
+		log.Fatalf("問題選択と解答準備に失敗: %v", err)
+	}
+
+	fmt.Printf("OK\n")
 
 	// 非ヘッドレス時は即終了せず Enter を待つ
 	if !cfg.Headless {

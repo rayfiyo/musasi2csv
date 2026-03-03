@@ -22,13 +22,16 @@ type Config struct {
 	UserDataDir string
 	Verbose     bool
 
+	Workbook int
+
 	ID       string
 	Password string
 }
 
 func Load() (*Config, error) {
 	// ログイン URL
-	const loginURL = "https://www.musasi.jp/oomachi-nabeshima/login"
+	// const loginURL = "https://www.musasi.jp/oomachi-nabeshima/login"
+	const loginURL = "https://www.musasi.jp/menu"
 
 	var (
 		envPath     string
@@ -36,6 +39,7 @@ func Load() (*Config, error) {
 		timeoutSec  int
 		userDataDir string
 		verbose     bool
+		workbook    int
 	)
 
 	flag.StringVar(&envPath, "env", ".env", "認証情報 .env のパス (Default: ./.env)")
@@ -44,7 +48,12 @@ func Load() (*Config, error) {
 	flag.StringVar(&userDataDir, "user-data-dir", "",
 		"Chrome のユーザーデータディレクトリ（任意）")
 	flag.BoolVar(&verbose, "verbose", false, "詳細ログ出力の無効(false)/有効(true)")
+	flag.IntVar(&workbook, "workbook", 0, "対象 workbook 番号（例: 7〜12）")
 	flag.Parse()
+
+	if workbook <= 0 {
+		return nil, fmt.Errorf("-workbook は 1 以上を指定してください（例: 7～12）")
+	}
 
 	// .env 読み込み（既存の環境変数が優先）
 	if err := utils.LoadDotEnv(envPath); err != nil {
@@ -74,7 +83,10 @@ func Load() (*Config, error) {
 		Timeout:     time.Duration(timeoutSec) * time.Second,
 		UserDataDir: absUserDataDir,
 		Verbose:     verbose,
-		ID:          id,
-		Password:    pw,
+
+		Workbook: workbook,
+
+		ID:       id,
+		Password: pw,
 	}, nil
 }
