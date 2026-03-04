@@ -72,7 +72,7 @@ func main() {
 		}
 
 		// ## 4. 問題の取得
-		rec, err := app.FetchQuestionExplanation(ctx, 1)
+		rec, err := app.FetchQuestionExplanation(ctx, q)
 		if err != nil {
 			log.Fatal(err)
 		}
