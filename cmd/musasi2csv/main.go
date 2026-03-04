@@ -63,6 +63,34 @@ func main() {
 		"q=%d question=%q answer=%s explain=%q",
 		rec.QNum, rec.Question, rec.AnswerString(), rec.Explain)
 
+	q := 1
+	for {
+		// 1問単位の timeout
+		qctx, cancel := context.WithTimeout(ctx, cfg.Timeout)
+
+		rec, err := app.FetchQuestionExplanation(qctx, q)
+		cancel()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Printf("q=%d question=%q answer=%s explain=%q",
+			rec.QNum, rec.Question, rec.AnswerString(), rec.Explain)
+
+		// 次の問題の存在確認も同様に問単位 timeout
+		qctx, cancel = context.WithTimeout(ctx, cfg.Timeout)
+		ok, err := app.NextQuestionExists(qctx, q+1)
+		cancel()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if !ok {
+			break
+		}
+		q++
+	}
+
 	fmt.Printf("OK\n")
 
 	// 非ヘッドレス時は即終了せず Enter を待つ

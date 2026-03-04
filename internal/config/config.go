@@ -19,6 +19,7 @@ type Config struct {
 	EnvPath     string
 	Headless    bool
 	Timeout     time.Duration
+	Timewait    time.Duration
 	UserDataDir string
 	Verbose     bool
 
@@ -37,6 +38,7 @@ func Load() (*Config, error) {
 		envPath     string
 		headless    bool
 		timeoutSec  int
+		timewaitSec int
 		userDataDir string
 		verbose     bool
 		workbook    int
@@ -45,6 +47,7 @@ func Load() (*Config, error) {
 	flag.StringVar(&envPath, "env", ".env", "認証情報 .env のパス (Default: ./.env)")
 	flag.BoolVar(&headless, "headless", true, "ヘッドレスモード有効(true)/無効(false)")
 	flag.IntVar(&timeoutSec, "timeout", 12, "各判定のタイムアウト時間 [秒]")
+	flag.IntVar(&timewaitSec, "timewait", 3, "各判定の待ち時間 [秒]")
 	flag.StringVar(&userDataDir, "user-data-dir", "",
 		"Chrome のユーザーデータディレクトリ（任意）")
 	flag.BoolVar(&verbose, "verbose", false, "詳細ログ出力の無効(false)/有効(true)")
@@ -81,6 +84,7 @@ func Load() (*Config, error) {
 		EnvPath:     envPath,
 		Headless:    headless,
 		Timeout:     time.Duration(timeoutSec) * time.Second,
+		Timewait:    time.Duration(timewaitSec) * time.Second,
 		UserDataDir: absUserDataDir,
 		Verbose:     verbose,
 
