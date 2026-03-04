@@ -31,8 +31,7 @@ type Config struct {
 
 func Load() (*Config, error) {
 	// ログイン URL
-	// const loginURL = "https://www.musasi.jp/oomachi-nabeshima/login"
-	const loginURL = "https://www.musasi.jp/menu"
+	const loginURL = "https://www.musasi.jp/oomachi-nabeshima/login"
 
 	var (
 		envPath     string

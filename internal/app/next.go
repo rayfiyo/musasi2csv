@@ -23,7 +23,7 @@ func NextQuestionExists(
 	ctx context.Context, nextQNum int, timeout time.Duration,
 ) (bool, error) {
 	if nextQNum <= 0 {
-		return false, fmt.Errorf("nextQNum must be >= 1: %d", nextQNum)
+		return false, fmt.Errorf("nextQNum >= 1 を満たしていない: %d", nextQNum)
 	}
 
 	nextURL := fmt.Sprintf(
@@ -36,7 +36,7 @@ func NextQuestionExists(
 		chromedp.Navigate(nextURL),
 		chromedp.WaitReady("body", chromedp.ByQuery),
 	); err != nil {
-		return false, fmt.Errorf("navigate failed: %w", err)
+		return false, fmt.Errorf("nextURL に遷移失敗: %w", err)
 	}
 
 	// その後、URL が安定して /menu かどうか分かるまで待つ

@@ -25,7 +25,7 @@ type QuestionRecord struct {
 // question/answer/explain を取得する。
 func FetchQuestionExplanation(ctx context.Context, qNum int) (*QuestionRecord, error) {
 	if qNum <= 0 {
-		return nil, fmt.Errorf("qNum must be >= 1: %d", qNum)
+		return nil, fmt.Errorf("qNum >= 1 を満たしていない: %d", qNum)
 	}
 
 	url := fmt.Sprintf(
@@ -63,7 +63,8 @@ func FetchQuestionExplanation(ctx context.Context, qNum int) (*QuestionRecord, e
 			return el ? (el.textContent ?? '') : '';
 		})()`, &rawExplain),
 	); err != nil {
-		return nil, fmt.Errorf("explanation page scrape failed (q=%d): %w", qNum, err)
+		return nil, fmt.Errorf("explanation ページの読み込み・情報取得に失敗 (q=%d): %w",
+			qNum, err)
 	}
 
 	question := normalizeNoWhitespace(rawQuestion)

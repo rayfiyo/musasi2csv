@@ -14,28 +14,27 @@ import (
 
 // docs/仕様.md の 1. ログイン を行う。
 func Login(ctx context.Context, loginURL, id, pw string, timeout time.Duration) error {
-	// 入力・クリック
+	// まず loginURL へ遷移
 	if err := chromedp.Run(ctx,
 		chromedp.Navigate(loginURL),
 		chromedp.WaitReady("body", chromedp.ByQuery),
+	); err != nil {
+		return fmt.Errorf("loginURL への遷移に失敗: %w", err)
+	}
 
-		// username/password それぞれで、input が描画されるのを待ってから入力
-		chromedp.WaitVisible(`#username`, chromedp.ByID),
+	// 入力・クリック
+	if err := chromedp.Run(ctx,
 		chromedp.SendKeys(`username`, id, chromedp.ByID),
-
-		chromedp.WaitVisible(`#password`, chromedp.ByID),
 		chromedp.SendKeys(`password`, pw, chromedp.ByID),
-
-		// name="Signin" の input をクリック
 		chromedp.Click(`input[name="Signin"]`, chromedp.ByQuery),
 	); err != nil {
 		return fmt.Errorf("ログインフォーム操作に失敗: %w", err)
 	}
 
-	// 成否判定:
+	// ログインの成否判定:
 	// 成功 -> https://www.musasi.jp/menu
 	// 失敗 -> /login のまま + #registrationErrors が追加
-	_, err := browser.WaitForURL(
+	if _, err := browser.WaitForURL(
 		ctx,
 		timeout,
 		200*time.Millisecond,
@@ -57,8 +56,7 @@ func Login(ctx context.Context, loginURL, id, pw string, timeout time.Duration) 
 			}
 			return false, nil
 		},
-	)
-	if err != nil {
+	); err != nil {
 		return err
 	}
 	return nil

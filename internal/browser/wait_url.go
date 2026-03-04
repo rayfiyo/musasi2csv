@@ -36,7 +36,7 @@ func WaitForURL(
 	check URLCheck,
 ) (string, error) {
 	if pred == nil {
-		return "", fmt.Errorf("pred is nil")
+		return "", fmt.Errorf("pred が nil")
 	}
 	if pollInterval <= 0 {
 		pollInterval = 200 * time.Millisecond
@@ -53,7 +53,7 @@ func WaitForURL(
 	for {
 		// 期限チェック
 		if time.Now().After(deadline) {
-			return "", fmt.Errorf("wait for url timeout")
+			return "", fmt.Errorf("URL 待ち中に timeout した")
 		}
 
 		// ctx キャンセルチェック
@@ -65,7 +65,7 @@ func WaitForURL(
 
 		// 現在 URL を取得
 		if err := chromedp.Run(ctx, chromedp.Location(&lastURL)); err != nil {
-			return "", fmt.Errorf("get current url failed: %w", err)
+			return "", fmt.Errorf("現在の URL 取得に失敗: %w", err)
 		}
 
 		// 追加チェック（URLに応じた DOM 検査など）
