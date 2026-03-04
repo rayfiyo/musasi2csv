@@ -4,6 +4,7 @@ package browser
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -11,7 +12,16 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-// NavigateResult は Navigate 時のドキュメント応答情報（最初の Document 応答）と最終 URL を返す。
+// URI フラグメントの除去を行う。
+func stripFragment(u string) string {
+	if i := strings.IndexByte(u, '#'); i >= 0 {
+		return u[:i]
+	}
+	return u
+}
+
+// NavigateResult は Navigate 時のドキュメント応答情報（最初の Document 応答）
+// と最終 URL を返す。
 type NavigateResult struct {
 	Status   int
 	Location string // 302 の Location（取れない場合は空）
@@ -21,6 +31,7 @@ type NavigateResult struct {
 // NavigateAndGetDocumentResponse は url へ遷移し、
 // 「その url に対する Document 応答の status（200/302 等）」を取得する。
 // 302 の場合 Location ヘッダも可能なら取得する。
+// ただし、ネットワークを監視する実装は扱いづらいので URL 遷移で確認したほうが良い。
 func NavigateAndGetDocumentResponse(
 	ctx context.Context, url string,
 ) (*NavigateResult, error) {
@@ -34,7 +45,6 @@ func NavigateAndGetDocumentResponse(
 		status   int
 		location string
 	)
-
 	chromedp.ListenTarget(ctx, func(ev any) {
 		switch e := ev.(type) {
 		case *network.EventResponseReceived:
@@ -42,7 +52,8 @@ func NavigateAndGetDocumentResponse(
 			if e.Type != network.ResourceTypeDocument {
 				return
 			}
-			if e.Response == nil || e.Response.URL != url {
+			// URI フラグメント（`#disabledHistoryback` など）を除去して比較
+			if e.Response == nil || stripFragment(e.Response.URL) != url {
 				return
 			}
 
@@ -81,7 +92,7 @@ func NavigateAndGetDocumentResponse(
 
 		// response を待つ（ctx timeout に任せる）
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			t := time.NewTicker(25 * time.Millisecond)
+			t := time.NewTicker(time.Millisecond)
 			defer t.Stop()
 			for {
 				mu.Lock()

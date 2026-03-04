@@ -5,16 +5,23 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/chromedp/chromedp"
 	"github.com/rayfiyo/musasi2csv/internal/browser"
 )
 
 const menuURL = "https://www.musasi.jp/menu"
 
 // NextQuestionExists は docs/仕様.md の 5. 次の問題に移る に従い、
-// qNum+1 の explanation URL にアクセスして、
-// 存在するか（200）/しないか（302→/menu）を返す。
-func NextQuestionExists(ctx context.Context, nextQNum int) (bool, error) {
+// qNum+1 の explanation URL にアクセスして、次の問題が存在するか/しないかを返す。
+//
+// 判定方針:
+// - /menu に到達したら「次の問題は存在しない」= false
+// - /menu 以外に到達したら「次の問題が存在する」= true
+func NextQuestionExists(
+	ctx context.Context, nextQNum int, timeout time.Duration,
+) (bool, error) {
 	if nextQNum <= 0 {
 		return false, fmt.Errorf("nextQNum must be >= 1: %d", nextQNum)
 	}
@@ -24,31 +31,29 @@ func NextQuestionExists(ctx context.Context, nextQNum int) (bool, error) {
 		nextQNum,
 	)
 
-	res, err := browser.NavigateAndGetDocumentResponse(ctx, nextURL)
+	// まず遷移を開始（ページの body が取れる程度まで待つ）
+	if err := chromedp.Run(ctx,
+		chromedp.Navigate(nextURL),
+		chromedp.WaitReady("body", chromedp.ByQuery),
+	); err != nil {
+		return false, fmt.Errorf("navigate failed: %w", err)
+	}
+
+	// その後、URL が安定して /menu かどうか分かるまで待つ
+	finalURL, err := browser.WaitForURL(
+		ctx, timeout, 200*time.Millisecond,
+		func(u string) bool { // 「/menu か /question/ か、どちらかに着地したら十分」
+			return strings.HasPrefix(u, menuURL) ||
+				strings.Contains(u, "/question/explanation/")
+		},
+	)
 	if err != nil {
 		return false, err
 	}
 
-	// 仕様: 302 が返って /menu にリダイレクトされるなら「存在しない」
-	if res.Status == 302 {
-		// Location が取れるならそれを優先
-		if strings.HasPrefix(res.Location, menuURL) {
-			return false, nil
-		}
-		// 取れない/相対などの可能性があるので final でも保険
-		if strings.HasPrefix(res.FinalURL, menuURL) {
-			return false, nil
-		}
-		// 302 だが menu 以外：仕様外ケースなので、存在しないではなくエラー
-		return false, fmt.Errorf(
-			"unexpected redirect: status=302 location=%q final=%q",
-			res.Location, res.FinalURL)
+	if strings.HasPrefix(finalURL, menuURL) {
+		return false, nil
 	}
 
-	if res.Status == 200 {
-		return true, nil
-	}
-
-	// 仕様外のコードは明示的にエラー
-	return false, fmt.Errorf("unexpected status: %d (final=%q)", res.Status, res.FinalURL)
+	return true, nil
 }

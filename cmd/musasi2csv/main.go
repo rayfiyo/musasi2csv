@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/rayfiyo/musasi2csv/internal/app"
 	"github.com/rayfiyo/musasi2csv/internal/browser"
@@ -43,33 +44,35 @@ func main() {
 	); err != nil {
 		log.Fatalf("ログイン失敗: %v", err)
 	}
+	time.Sleep(cfg.Timewait)
 
 	// ## 2. メニュー選択と初期化
 	if err := app.MenuSelectAndInit(ctx); err != nil {
 		log.Fatalf("メニュー選択と初期化に失敗: %v", err)
 	}
+	time.Sleep(cfg.Timewait)
 
 	// ## 3. 問題選択と解答準備
 	if err := app.PrepareQuestions(ctx, cfg.Workbook, cfg.Timeout); err != nil {
 		log.Fatalf("問題選択と解答準備に失敗: %v", err)
 	}
-
-	// ## 4. 問題の取得
-	rec, err := app.FetchQuestionExplanation(ctx, 1)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf(
-		"q=%d question=%q answer=%s explain=%q",
-		rec.QNum, rec.Question, rec.AnswerString(), rec.Explain)
+	time.Sleep(cfg.Timewait)
 
 	q := 1
 	for {
+		time.Sleep(cfg.Timewait)
+
 		// 1問単位の timeout
 		qctx, cancel := context.WithTimeout(ctx, cfg.Timeout)
 
-		rec, err := app.FetchQuestionExplanation(qctx, q)
+		_, err := app.FetchQuestionExplanation(qctx, q)
 		cancel()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// ## 4. 問題の取得
+		rec, err := app.FetchQuestionExplanation(ctx, 1)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -77,9 +80,10 @@ func main() {
 		log.Printf("q=%d question=%q answer=%s explain=%q",
 			rec.QNum, rec.Question, rec.AnswerString(), rec.Explain)
 
+		// ## 5. 次の問題に移る
 		// 次の問題の存在確認も同様に問単位 timeout
 		qctx, cancel = context.WithTimeout(ctx, cfg.Timeout)
-		ok, err := app.NextQuestionExists(qctx, q+1)
+		ok, err := app.NextQuestionExists(qctx, q+1, cfg.Timeout)
 		cancel()
 		if err != nil {
 			log.Fatal(err)
