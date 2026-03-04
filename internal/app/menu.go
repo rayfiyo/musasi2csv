@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/chromedp/chromedp"
+	"github.com/rayfiyo/musasi2csv/internal/browser"
 )
 
 // docs/仕様.md の 2. メニュー選択と初期化 を行う。
@@ -25,28 +26,21 @@ func MenuSelectAndInit(ctx context.Context) error {
 	}
 
 	// セッションが切れていると login に戻される可能性があるので軽く検証する
-	deadline := time.Now().Add(10 * time.Second)
-	for time.Now().Before(deadline) {
-		var url string
-		if err := chromedp.Run(ctx, chromedp.Location(&url)); err != nil {
-			return fmt.Errorf("現在URL取得に失敗: %w", err)
-		}
-
-		// 期待: revokeURL そのもの or そこからの遷移
-		//       （実装変更で menu 等に飛ぶ可能性もある）
-		// 失敗: /login に戻される
-		if strings.Contains(url, "/login") {
-			return fmt.Errorf("初期化に失敗"+
-				"（/login にリダイレクトを検知、セッション切れの可能性）: url=%s", url)
-		}
-
-		// 何かしらページが確定しているなら OK とみなす（過度に厳密にすると壊れやすい）
-		if strings.HasPrefix(url, "https://www.musasi.jp/") {
-			return nil
-		}
-
-		time.Sleep(200 * time.Millisecond)
-	}
-
-	return fmt.Errorf("初期化後の遷移確認がタイムアウトしました")
+	// https://www.musasi.jp/ 配下のどこかに遷移していれば OK とみなす
+	_, err := browser.WaitForURL(
+		ctx,
+		10*time.Second,
+		200*time.Millisecond,
+		func(u string) bool {
+			return strings.HasPrefix(u, "https://www.musasi.jp/")
+		},
+		func(ctx context.Context, u string) (done bool, err error) {
+			if strings.Contains(u, "/login") {
+				return true, fmt.Errorf("初期化に失敗"+
+					"（/login にリダイレクトを検知、セッション切れの可能性）: url=%s", u)
+			}
+			return false, nil
+		},
+	)
+	return err
 }

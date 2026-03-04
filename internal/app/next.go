@@ -46,6 +46,7 @@ func NextQuestionExists(
 			return strings.HasPrefix(u, menuURL) ||
 				strings.Contains(u, "/question/explanation/")
 		},
+		nil,
 	)
 	if err != nil {
 		return false, err

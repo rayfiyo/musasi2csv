@@ -21,8 +21,8 @@ type Options struct {
 	Timeout     time.Duration
 }
 
-// NewContext は chromedp を使うための ctx と cancel を返します。
-// 呼び出し側は cancel() を必ず defer してください。
+// NewContext は chromedp を使うための ctx と cancel を返す。
+// 呼び出し側は cancel() を必ず defer すること。
 func NewContext(
 	parent context.Context,
 	opt Options,
