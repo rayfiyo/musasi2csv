@@ -22,7 +22,43 @@ func Login(ctx context.Context, loginURL, id, pw string, timeout time.Duration) 
 		return fmt.Errorf("loginURL への遷移に失敗: %w", err)
 	}
 
-	// 入力・クリック
+	// /menu にいる or ログインフォームが見えている まで待つ
+	landedURL, err := browser.WaitForURL(
+		ctx,
+		timeout,
+		200*time.Millisecond,
+		func(u string) bool {
+			return strings.HasPrefix(u, "https://www.musasi.jp/menu")
+		},
+		func(ctx context.Context, u string) (done bool, err error) {
+			// フォームが見えているなら、/menu ではなくてもログイン処理へ進む
+			if strings.Contains(u, "/login") {
+				var visible bool
+				_ = chromedp.Run(ctx, chromedp.Evaluate(`
+                    (function(){
+                      const el = document.querySelector('#username');
+                      if (!el) return false;
+                      // offsetParent が null なら非表示扱い（display:none 等）
+                      return el.offsetParent !== null;
+                    })()
+                `, &visible))
+				if visible {
+					return true, nil
+				}
+			}
+			return false, nil
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	// ログイン済みで /menu にいるなら完了
+	if strings.HasPrefix(landedURL, "https://www.musasi.jp/menu") {
+		return nil
+	}
+
+	// ここまで来たら未ログイン（フォームが見えている）なので入力・クリック
 	if err := chromedp.Run(ctx,
 		chromedp.SendKeys(`username`, id, chromedp.ByID),
 		chromedp.SendKeys(`password`, pw, chromedp.ByID),
