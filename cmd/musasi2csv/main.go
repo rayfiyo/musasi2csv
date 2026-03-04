@@ -65,11 +65,11 @@ func main() {
 		// 1問単位の timeout
 		qctx, cancel := context.WithTimeout(ctx, cfg.Timeout)
 
-		_, err := app.FetchQuestionExplanation(qctx, q)
-		cancel()
-		if err != nil {
+		if _, err := app.FetchQuestionExplanation(qctx, q); err != nil {
+			cancel()
 			log.Fatal(err)
 		}
+		cancel()
 
 		// ## 4. 問題の取得
 		rec, err := app.FetchQuestionExplanation(ctx, q)

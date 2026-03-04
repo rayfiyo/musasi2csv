@@ -30,7 +30,7 @@ func PrepareQuestions(ctx context.Context, workbook int, timeout time.Duration) 
 	}
 
 	// 遷移確認（自動で question/1 に行く）
-	_, err := browser.WaitForURL(
+	if _, err := browser.WaitForURL(
 		ctx,
 		timeout,
 		200*time.Millisecond,
@@ -49,8 +49,7 @@ func PrepareQuestions(ctx context.Context, workbook int, timeout time.Duration) 
 			}
 			return false, nil
 		},
-	)
-	if err != nil {
+	); err != nil {
 		return fmt.Errorf("解答準備（question/1 遷移確認）に失敗: %w", err)
 	}
 	return nil
