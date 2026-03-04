@@ -54,6 +54,15 @@ func main() {
 		log.Fatalf("問題選択と解答準備に失敗: %v", err)
 	}
 
+	// ## 4. 問題の取得
+	rec, err := app.FetchQuestionExplanation(ctx, 1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf(
+		"q=%d question=%q answer=%s explain=%q",
+		rec.QNum, rec.Question, rec.AnswerString(), rec.Explain)
+
 	fmt.Printf("OK\n")
 
 	// 非ヘッドレス時は即終了せず Enter を待つ
