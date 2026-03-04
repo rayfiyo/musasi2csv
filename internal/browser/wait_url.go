@@ -68,8 +68,6 @@ func WaitForURL(
 			return "", fmt.Errorf("get current url failed: %w", err)
 		}
 
-		fmt.Println(lastURL)
-
 		// 追加チェック（URLに応じた DOM 検査など）
 		if check != nil {
 			done, err := check(ctx, lastURL)
