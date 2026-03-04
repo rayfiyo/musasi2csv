@@ -64,10 +64,11 @@ func WaitForURL(
 		}
 
 		// 現在 URL を取得
-		var cur string
-		if err := chromedp.Run(ctx, chromedp.Location(&cur)); err != nil {
+		if err := chromedp.Run(ctx, chromedp.Location(&lastURL)); err != nil {
 			return "", fmt.Errorf("get current url failed: %w", err)
 		}
+
+		fmt.Println(lastURL)
 
 		// 追加チェック（URLに応じた DOM 検査など）
 		if check != nil {
