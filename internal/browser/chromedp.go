@@ -53,18 +53,6 @@ func NewContext(
 		allocCancel()
 	}
 
-	// タイムアウトを一括設定する
-	if opt.Timeout > 0 {
-		tctx, tcancel := context.WithTimeout(ctx, opt.Timeout)
-
-		prevCancel := cancel
-		cancel = func() {
-			tcancel()
-			prevCancel()
-		}
-		ctx = tctx
-	}
-
 	// verbose 時はブラウザイベントを監視する
 	if opt.Verbose {
 		chromedp.ListenTarget(ctx, func(ev interface{}) {
